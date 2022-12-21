@@ -7,6 +7,10 @@ To execute:
     ```sh
     $ python test.py
     ```
+- To build the docker based on [Dockerfile](https://github.com/BerririAmal/invyo/blob/master/Dockerfile), use the following command:
+    ```sh
+    $ sudo docker image build -t testinvyo .
+    ```
 - To run the docker, use the following command and open in a Web Browser the IP Address of the docker with a warehouse address:
     ```sh
     $ sudo docker run -p 50001:50001 -v $(pwd):/app testinvyo
@@ -14,4 +18,4 @@ To execute:
     
 ## Requirements
 - Please refer to [requirements.txt](https://github.com/BerririAmal/invyo/blob/master/requirements.txt).
-- Python version used is 3.7.7.  
+- Python version used was 3.7.7.  
