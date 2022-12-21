@@ -1,12 +1,14 @@
 # Test
 This repository contains a script, a notebook, a dockerfile, and other dependencies to perform the task provided in the test statement.
 
-To execute:
-- [test20221221.ipynb](https://github.com/BerririAmal/invyo/blob/master/test20221221.ipynb) allows to browse the povided dependencies and return a file named "askedFile.csv" by specifing an address on line [21](https://github.com/BerririAmal/invyo/blob/master/test20221221.ipynb#L21).
+## Standalone Execution
+To execute it, one of the following options can be used:
+- [test20221221.ipynb](https://github.com/BerririAmal/invyo/blob/master/test20221221.ipynb) allows to browse the povided dependencies and return a file named "askedFile.csv" by specifing an address on line [21](https://github.com/BerririAmal/invyo/blob/master/test20221221.ipynb#L21) of cell 2.
 - [test.py](https://github.com/BerririAmal/invyo/blob/master/test.py) represents a script encapsulated in a REST API using Flask; the REST API allows to send a warehouse address using the IP address and port provided by the API and return a file named "askedFile.csv".
     ```sh
     $ python test.py
     ```
+## Docker
 - To build the docker based on [Dockerfile](https://github.com/BerririAmal/invyo/blob/master/Dockerfile), use the following command:
     ```sh
     $ sudo docker image build -t testinvyo .
