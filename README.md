@@ -11,3 +11,7 @@ To execute:
     ```sh
     $ sudo docker run -p 50001:50001 -v $(pwd):/app testinvyo
     ```
+    
+## Requirements
+- Please refer to [requirements.txt](https://github.com/BerririAmal/invyo/blob/master/requirements.txt).
+- Python version used is 3.7.7.  
