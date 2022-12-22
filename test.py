@@ -3,10 +3,15 @@ from flask import Flask
 from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
 
-from geopy.exc import GeocoderTimedOut
-
-import csv
 import pandas as pd
+import os
+
+# Remove generated files if exists
+try:
+    os.remove('Dataframe_result.csv')
+    os.remove('askedFile.csv')
+except OSError:
+    pass
 
 app = Flask(__name__)
 
@@ -36,37 +41,8 @@ def distanceLocations(headquarter, warehouse):
         clas = "3"
     return clas
 
-# Function to extract headquarters from the new dataset clearLocations.csv
+# Function to extract headquarters from the new dataframe "extractedDF"
 def extractHeadquarters(addressWarehouse):
-    # Open the created dataset clearLocations.csv
-    with open('Dataframe_result.csv') as csv_clearLocations:
-        csvClearLocations = csv.reader(csv_clearLocations, delimiter=',')
-        clearLocations = list(csvClearLocations)
-
-    askedFile = open('askedFile.csv', 'w', encoding='utf-8')
-    heading = "company_id,country_id,country,city_id,city,address,is_headquarter,class\n"
-    askedFile.write(heading)
-    warehouseLatitude, warehouselongitude = longLatAddress(addressWarehouse)
-    lonLatWarehouse = (warehouseLatitude, warehouselongitude)
-    for i in range(1, len(clearLocations)):
-        headquarterLatitude, headquarterlongitude = longLatAddress(clearLocations[i][5] + " " + clearLocations[i][4] + " " + clearLocations[i][2])
-        if headquarterLatitude is None and headquarterlongitude is None:
-            row = "{},{},{},{},{},{},{},{}\n".format(clearLocations[i][0], clearLocations[i][1], clearLocations[i][2], clearLocations[i][3], clearLocations[i][4], clearLocations[i][5], clearLocations[i][6], "AddressIncorrect")
-            askedFile.write(row)
-        else:
-            lonLatHeadquarter = (headquarterLatitude, headquarterlongitude)
-            clas = distanceLocations(lonLatHeadquarter, lonLatWarehouse)
-            row = "{},{},{},{},{},{},{},{}\n".format(clearLocations[i][0], clearLocations[i][1], clearLocations[i][2], clearLocations[i][3], clearLocations[i][4], clearLocations[i][5], clearLocations[i][6], clas)
-            askedFile.write(row)
-            askedFile.flush()
-
-@app.route('/')
-def home():
-    return '<h1>INVYO Test</h1>'
-
-@app.route('/<addressWarehouse>')
-def invyo(addressWarehouse):
-
     # Load dependencies as dataframes
     dfLocations = pd.read_csv('locations.csv', sep=';')
     dfCountry = pd.read_json('country.json')
@@ -80,14 +56,43 @@ def invyo(addressWarehouse):
 
     # Filter to extract only headquarters located in France
     IdFrance = dfCountry[(dfCountry['name'] == 'France')].values[0].tolist()[0]
-    filterinfDataframe = dfLocations[(dfLocations['is_headquarter'] == 1) & (dfLocations['country_id'] == IdFrance)]
+    extractedDF = dfLocations[(dfLocations['is_headquarter'] == 1) & (dfLocations['country_id'] == IdFrance)]
 
     # Filter to remove NaN addresses
-    filterinfDataframe1 = filterinfDataframe.dropna()
-    filterinfDataframe1.to_csv('Dataframe_result.csv', index=False, header=True)
+    extractedDF = extractedDF.dropna()
+    extractedDF.to_csv('Dataframe_result.csv', index=False, header=True)
+
+    # Extract longitude and latitude from addressWarehouse
+    warehouseLatitude, warehouselongitude = longLatAddress(addressWarehouse)
+    lonLatWarehouse = (warehouseLatitude, warehouselongitude)
+
+    # Create empty list for appending headquarter classes
+    classColumn = []
+    
+    # Iterate over extractedDF and assign class
+    for i, row in extractedDF.iterrows():
+        headquarterLatitude, headquarterlongitude = longLatAddress(extractedDF['address'][i] + " " + extractedDF['city'][i] + " " + extractedDF['country'][i])
+        if headquarterLatitude is None and headquarterlongitude is None:
+            classColumn.append("incorrectAddress")
+        else:
+            lonLatHeadquarter = (headquarterLatitude, headquarterlongitude)
+            clas = distanceLocations(lonLatHeadquarter, lonLatWarehouse)
+            classColumn.append(clas)
+
+    return extractedDF, classColumn
+
+@app.route('/')
+def home():
+    return '<h1>INVYO Test</h1>'
+
+@app.route('/<addressWarehouse>')
+def invyo(addressWarehouse):
     
     # Call function to extract headquarters, measure distance, and classify.
-    extractHeadquarters(addressWarehouse)
+    extractedDF, classColumn = extractHeadquarters(addressWarehouse)
+
+    extractedDF["Class"] = classColumn
+    extractedDF.to_csv('askedFile.csv', index=False, header=True)
     
     return '<h1>INVYO Test - Done</h1>'
 
