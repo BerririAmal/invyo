@@ -6,7 +6,7 @@ from geopy.distance import geodesic
 from geopy.exc import GeocoderTimedOut
 
 import csv
-import json
+import pandas as pd
 
 app = Flask(__name__)
 
@@ -25,18 +25,7 @@ def longLatAddress(address):
         companyLocationlongitude = None
     return(companyLocationLatitude, companyLocationlongitude)
 
-# Function to measure distance between a headquarter and its warehouses
-def distanceLocations(headquarter, warehouse):
-    distance = geodesic(headquarter, warehouse).kilometers
-    if distance < 20:
-        clas = "1"
-    elif distance < 100 and distance > 20:
-        clas = "2"
-    elif distance > 100:
-        clas = "3"
-    return clas
-
-# Function to measure distance between a headquarter and its warehouses
+# Function to measure distance between a warehouse and headquarters
 def distanceLocations(headquarter, warehouse):
     distance = geodesic(headquarter, warehouse).kilometers
     if distance < 20:
@@ -77,7 +66,27 @@ def home():
 
 @app.route('/<addressWarehouse>')
 def invyo(addressWarehouse):
+
+    # Load dependencies as dataframes
+    dfLocations = pd.read_csv('locations.csv', sep=';')
+    dfCountry = pd.read_json('country.json')
+    dfCity = pd.read_json('city.json')
+
+    # Replace City and Country codes based on city.json and country.json files
+    dfLocations.insert(3, "city", "_" , True)
+    dfLocations['city'] = dfLocations['city_id'].map(dfCity.set_index('id')['name'])
+    dfLocations.insert(2, "country", "_" , True)
+    dfLocations['country'] = dfLocations['country_id'].map(dfCountry.set_index('id')['name'])
+
+    # Filter to extract only headquarters located in France
+    IdFrance = dfCountry[(dfCountry['name'] == 'France')].values[0].tolist()[0]
+    filterinfDataframe = dfLocations[(dfLocations['is_headquarter'] == 1) & (dfLocations['country_id'] == IdFrance)]
+
+    # Filter to remove NaN addresses
+    filterinfDataframe1 = filterinfDataframe.dropna()
+    filterinfDataframe1.to_csv('Dataframe_result.csv', index=False, header=True)
     
+    # Call function to extract headquarters, measure distance, and classify.
     extractHeadquarters(addressWarehouse)
     
     return '<h1>INVYO Test - Done</h1>'
